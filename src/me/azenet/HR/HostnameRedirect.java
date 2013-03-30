@@ -20,6 +20,7 @@ public class HostnameRedirect extends JavaPlugin {
 	private Statement dbStatement;
 	private HashMap<String, HostnameRedirectLocation> locations;
 	private File locationsFile = new File(this.getDataFolder() + File.separator + "locations.ser");
+	private boolean debugMode = true;
 	
 	public void onEnable() {
 		locations = new HashMap<String, HostnameRedirectLocation>();
@@ -59,9 +60,24 @@ public class HostnameRedirect extends JavaPlugin {
 		return null;
 	}
 	
-	public void playerOnline(Player p) {
+	public void playerOnline(Player p, String hostname) {
+		HostnameRedirectLocation hrl = getLocationFromHostname(hostname);
+		if (!p.hasPlayedBefore() && hrl != null) {
+			debug(p.getName()+" never played. Teleporting to defined location "+hrl.getName());
+			teleportPlayerToLocation(p, hrl.getName());
+			return;
+		}
+		if (hrl != null && p.getLocation().getWorld() != hrl.getLocation().getWorld()) {
+			teleportPlayerToLocation(p, hrl.getName());
+			return;
+		}
+		if (hrl != null && hrl.hasToTP() ) {
+			teleportPlayerToLocation(p, hrl.getName());
+			return;
+		}
 		if (!p.hasPlayedBefore() && isLocation("default")) {
 			teleportPlayerToLocation(p, "default");
+			return;
 		}
 	}
 	
@@ -79,7 +95,7 @@ public class HostnameRedirect extends JavaPlugin {
 	
 	public HostnameRedirectLocation getLocationFromHostname(String hostname) {
 		for (HostnameRedirectLocation hrl : locations.values()) {
-			if (hrl.getHostname() == hostname) return hrl;
+			if (hostname.contains(hrl.getHostname())) return hrl;
 		}
 		return null;
 	}
@@ -90,5 +106,9 @@ public class HostnameRedirect extends JavaPlugin {
 			db.close();
 		} catch (Exception e) {
 		}
+	}
+	
+	public void debug(String str) {
+		if (debugMode) l.info(str);
 	}
 }
