@@ -19,6 +19,7 @@ public class HRMessageUtils {
 		HRMessageUtils.formattedMessageToPlayer(p, "/hr toggletp [name] - Whether to teleport the player if he is already on the same world as the defined hostname");
 		HRMessageUtils.formattedMessageToPlayer(p, "/hr list - List all hostnames defined");
 		HRMessageUtils.formattedMessageToPlayer(p, "/hr tp [name] - Teleports to the location of a hostname");
+		HRMessageUtils.formattedMessageToPlayer(p, "/hr delete [name] - Deletes a hostname");
 		HRMessageUtils.formattedMessageToPlayer(p, "/hr help - Shows this");
 	}
 	
