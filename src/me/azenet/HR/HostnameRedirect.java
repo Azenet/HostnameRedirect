@@ -137,6 +137,7 @@ public class HostnameRedirect extends JavaPlugin {
 			sender.sendMessage("Can't be used from the console.");
 			return true;
 		}
+		Player p = (Player)sender;
 		if (args.length < 2) {
 			return false;
 		}
@@ -147,12 +148,32 @@ public class HostnameRedirect extends JavaPlugin {
 			break;
 		case "define":
 			if (args[2] == "default") {
-				
+				if (args[3] != null && args[3] == "force") {
+					this.addLocation(new HostnameRedirectLocation("default", "<no hostname>", p.getLocation(),true));
+				} else {
+					this.addLocation(new HostnameRedirectLocation("default", "<no hostname>", p.getLocation(),false));
+				}
 			}
 		}
 		return false;
 	}
 
+	public void addLocation(HostnameRedirectLocation hrl) {
+		this.addLocation(hrl, true);
+	}
+	
+	public void addLocation(HostnameRedirectLocation hrl, Boolean force) {
+		Boolean hadTo = false;
+		if (locations.containsKey(hrl.getName())) {
+			if (force) {
+				locations.remove(hrl.getName());
+				hadTo = true;
+			}
+		}
+		if ((hadTo && force) || !hadTo) locations.put(hrl.getName(), hrl);
+		writeData();
+	}
+	
 	public HashMap<String, HostnameRedirectLocation> getLocations() {
 		return locations;
 	}
