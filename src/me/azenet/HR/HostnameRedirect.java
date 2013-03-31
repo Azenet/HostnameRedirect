@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,10 +23,17 @@ public class HostnameRedirect extends JavaPlugin {
 	private HashMap<String, HostnameRedirectLocation> locations;
 	private File locationsFile = new File(this.getDataFolder() + File.separator + "locations.ser");
 	private boolean debugMode = true;
+	private HRMessageUtils mU;
 	
 	public void onEnable() {
+		mU = new HRMessageUtils(this);
 		locations = new HashMap<String, HostnameRedirectLocation>();
 		if (!locationsFile.exists()) {
+			try {
+				locationsFile.createNewFile();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			writeData();
 		} else {
 			locations = getDataFromLocationsFile();
@@ -33,7 +42,7 @@ public class HostnameRedirect extends JavaPlugin {
 	
 	public void writeData() {
 		try {
-			FileOutputStream fos = new FileOutputStream(locationsFile);
+			FileOutputStream fos = new FileOutputStream(locationsFile, false);
 			ObjectOutputStream out = new ObjectOutputStream(fos);
 			out.writeObject(locations);
 			out.close();
@@ -67,22 +76,33 @@ public class HostnameRedirect extends JavaPlugin {
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
-		if (hrl != null && p.getLocation().getWorld() != hrl.getLocation().getWorld()) {
+		if (hrl != null && hrl.hasToTP()) {
+			debug(p.getName()+" : gotta teleport, mate!");
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
-		if (hrl != null && hrl.hasToTP() ) {
+		if (hrl != null && hrl.getLocation().getWorld() != p.getLocation().getWorld()) {
+			debug(p.getName()+" : not the good world");
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
-		if (!p.hasPlayedBefore() && isLocation("default")) {
-			teleportPlayerToLocation(p, "default");
-			return;
+		if (isLocation("default")) {
+			if (getLocationFromHostname("default").hasToTP() || !p.hasPlayedBefore()) {
+				debug("Teleporting "+p.getName()+" to default location");
+				teleportPlayerToLocation(p, "default");
+				return;
+			}
 		}
+		debug("Nothing matched for "+p.getName());
 	}
 	
-	public void teleportPlayerToLocation(Player p, String loc) {
-		
+	public Boolean teleportPlayerToLocation(Player p, String loc) {
+		HostnameRedirectLocation hrl = getLocationFromName(loc);
+		if (hrl != null) {
+			p.teleport(hrl.getLocation());
+			return true;
+		}
+		return false;
 	}
 	
 	public Boolean isLocation(String locationName) {
@@ -110,5 +130,30 @@ public class HostnameRedirect extends JavaPlugin {
 	
 	public void debug(String str) {
 		if (debugMode) l.info(str);
+	}
+	
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		if (!(sender instanceof Player)) {
+			sender.sendMessage("Can't be used from the console.");
+			return true;
+		}
+		if (args.length < 2) {
+			return false;
+		}
+		String mainCommand = args[1];
+		switch (mainCommand) {
+		case "help":
+			mU.sendHelpToPlayer((Player)sender);
+			break;
+		case "define":
+			if (args[2] == "default") {
+				
+			}
+		}
+		return false;
+	}
+
+	public HashMap<String, HostnameRedirectLocation> getLocations() {
+		return locations;
 	}
 }

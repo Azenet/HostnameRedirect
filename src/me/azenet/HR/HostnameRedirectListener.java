@@ -14,7 +14,7 @@ public class HostnameRedirectListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerLogin(PlayerLoginEvent ev) {
-		
+		plugin.playerOnline(ev.getPlayer(), ev.getHostname());
 	}
 	
 }
