@@ -1,9 +1,12 @@
 package me.azenet.HR;
 
+import java.io.Serializable;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 
-public class HostnameRedirectLocation {
+public class HostnameRedirectLocation implements Serializable {
+	private static final long serialVersionUID = 8431258053049898710L;
 	private Double x;
 	private Double y;
 	private Double z;

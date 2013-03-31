@@ -21,15 +21,16 @@ public class HostnameRedirect extends JavaPlugin {
 	private Connection db;
 	private Statement dbStatement;
 	private HashMap<String, HostnameRedirectLocation> locations;
-	private File locationsFile = new File(this.getDataFolder() + File.separator + "locations.ser");
-	private boolean debugMode = true;
+	private File locationsFile;
 	private HRMessageUtils mU;
 	
 	public void onEnable() {
+		locationsFile = new File(this.getDataFolder() + File.separator + "locations.ser");
 		mU = new HRMessageUtils(this);
 		locations = new HashMap<String, HostnameRedirectLocation>();
 		if (!locationsFile.exists()) {
 			try {
+				this.getDataFolder().mkdirs();
 				locationsFile.createNewFile();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -38,6 +39,7 @@ public class HostnameRedirect extends JavaPlugin {
 		} else {
 			locations = getDataFromLocationsFile();
 		}
+		Bukkit.getPluginManager().registerEvents(new HostnameRedirectListener(this), this);
 	}
 	
 	public void writeData() {
@@ -72,28 +74,28 @@ public class HostnameRedirect extends JavaPlugin {
 	public void playerOnline(Player p, String hostname) {
 		HostnameRedirectLocation hrl = getLocationFromHostname(hostname);
 		if (!p.hasPlayedBefore() && hrl != null) {
-			debug(p.getName()+" never played. Teleporting to defined location "+hrl.getName());
+			l.info(p.getName()+" never played. Teleporting to defined location "+hrl.getName());
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
 		if (hrl != null && hrl.hasToTP()) {
-			debug(p.getName()+" : gotta teleport, mate!");
+			l.info(p.getName()+" : gotta teleport, mate!");
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
 		if (hrl != null && hrl.getLocation().getWorld() != p.getLocation().getWorld()) {
-			debug(p.getName()+" : not the good world");
+			l.info(p.getName()+" : not the good world");
 			teleportPlayerToLocation(p, hrl.getName());
 			return;
 		}
 		if (isLocation("default")) {
 			if (getLocationFromHostname("default").hasToTP() || !p.hasPlayedBefore()) {
-				debug("Teleporting "+p.getName()+" to default location");
+				l.info("Teleporting "+p.getName()+" to default location");
 				teleportPlayerToLocation(p, "default");
 				return;
 			}
 		}
-		debug("Nothing matched for "+p.getName());
+		l.info("Nothing matched for "+p.getName());
 	}
 	
 	public Boolean teleportPlayerToLocation(Player p, String loc) {
@@ -128,34 +130,51 @@ public class HostnameRedirect extends JavaPlugin {
 		}
 	}
 	
-	public void debug(String str) {
-		if (debugMode) l.info(str);
-	}
-	
+	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (!(sender instanceof Player)) {
 			sender.sendMessage("Can't be used from the console.");
 			return true;
 		}
 		Player p = (Player)sender;
-		if (args.length < 2) {
+		if (args.length < 1) {
 			return false;
 		}
-		String mainCommand = args[1];
+		String mainCommand = args[0];
 		switch (mainCommand) {
 		case "help":
 			mU.sendHelpToPlayer((Player)sender);
-			break;
+			return true;
 		case "define":
-			if (args[2] == "default") {
-				if (args[3] != null && args[3] == "force") {
+			if (args.length < 2) {
+				HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define [hostname] [name]");
+				HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define default");
+				HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define default force");
+				return true;
+			}
+			if (args[1] == "default") {
+				if (args.length >= 3 && args[2] == "force") {
 					this.addLocation(new HostnameRedirectLocation("default", "<no hostname>", p.getLocation(),true));
 				} else {
 					this.addLocation(new HostnameRedirectLocation("default", "<no hostname>", p.getLocation(),false));
 				}
+			} else {
+				if (args.length < 3) {
+					HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define [hostname] [name]");
+					HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define default");
+					HRMessageUtils.formattedMessageToPlayer(p, "Usage: /hr define default force");
+					return true;
+				}
+				this.addLocation(new HostnameRedirectLocation(args[2], args[1], p.getLocation()));
 			}
+			return true;
+		case "list":
+			mU.sendHostnamesToPlayer(p);
+			return true;
+		default:
+			p.sendMessage("WAT ? "+args[0]+"/"+mainCommand);
+			return true;
 		}
-		return false;
 	}
 
 	public void addLocation(HostnameRedirectLocation hrl) {

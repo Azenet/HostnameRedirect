@@ -1,9 +1,9 @@
-name: Hostname Redirect
+name: HostnameRedirect
 version: 0.1a
 main: me.azenet.HR.HostnameRedirect
 author: azenet
 description: Redirect guys to world/position
 commands:
     hr:
-        usage: /hr <command>
-        description: Choix d'un kit
+        usage: /hr command
+        description: Main command
